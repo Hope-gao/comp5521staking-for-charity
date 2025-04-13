@@ -8,45 +8,44 @@ const LockType = {
 
 function WithdrawButton({ stake, loading, onWithdraw }) {
   const now = new Date();
-  
-  // 检查是否已到期
+
+  // Check if it is unlocked
   const isUnlocked = stake.lockType === LockType.Flex || now >= stake.unlockTime;
-  
-  // 计算剩余时间
+
+  // Calculate remaining time
   const getRemainingTime = () => {
     if (stake.lockType === LockType.Flex) return null;
-    
+
     const diff = stake.unlockTime - now;
     if (diff <= 0) return null;
-    
-    // 剩余天数
+
+    // Remaining days
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    
+
     if (days > 0) {
-      return `还剩 ${days} 天`;
+      return `${days} days remaining`;
     } else {
-      // 剩余小时
+      // Remaining hours
       const hours = Math.floor(diff / (1000 * 60 * 60));
-      return `还剩 ${hours} 小时`;
+      return `${hours} hours remaining`;
     }
   };
-  
+
   const remainingTime = getRemainingTime();
-  
+
   return (
     <div>
       <button
         onClick={onWithdraw}
         disabled={loading || !isUnlocked}
-        className={`w-full py-2 px-4 rounded-md text-white font-medium ${
-          isUnlocked 
-            ? 'bg-green-600 hover:bg-green-700' 
+        className={`w-full py-2 px-4 rounded-md text-white font-medium ${isUnlocked
+            ? 'bg-green-600 hover:bg-green-700'
             : 'bg-gray-400 cursor-not-allowed'
-        } transition disabled:opacity-70`}
+          } transition disabled:opacity-70`}
       >
-        {loading ? '处理中...' : (isUnlocked ? '提取' : '锁定中')}
+        {loading ? 'Processing...' : (isUnlocked ? 'Withdraw' : 'Locked')}
       </button>
-      
+
       {remainingTime && (
         <p className="text-xs text-center mt-1 text-gray-500">
           {remainingTime}
