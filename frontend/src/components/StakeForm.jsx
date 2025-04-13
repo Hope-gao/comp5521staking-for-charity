@@ -21,19 +21,19 @@ function StakeForm({ loading, tokenAllowance, tokenInfo, rewardRates, onStake })
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md h-full">
-      <h2 className="text-xl font-bold mb-4 text-blue-800">质押代币</h2>
-      
+      <h2 className="text-xl font-bold mb-4 text-blue-800">Stake Tokens</h2>
+
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            质押金额
+            Stake Amount
           </label>
           <div className="relative">
             <input
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="输入质押金额"
+              placeholder="Enter stake amount"
               disabled={!isApproved || loading}
               className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
             />
@@ -44,10 +44,10 @@ function StakeForm({ loading, tokenAllowance, tokenInfo, rewardRates, onStake })
             )}
           </div>
         </div>
-        
+
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            锁定期
+            Lock Period
           </label>
           <select
             value={lockType}
@@ -55,23 +55,23 @@ function StakeForm({ loading, tokenAllowance, tokenInfo, rewardRates, onStake })
             disabled={!isApproved || loading}
             className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
           >
-            <option value={LockType.Flex}>活期 ({rewardRates[LockType.Flex] || 5}% 年化)</option>
-            <option value={LockType.OneMonth}>1个月 ({rewardRates[LockType.OneMonth] || 8}% 年化)</option>
-            <option value={LockType.OneYear}>1年 ({rewardRates[LockType.OneYear] || 15}% 年化)</option>
+            <option value={LockType.Flex}>Flexible ({rewardRates[LockType.Flex] || 5}% APR)</option>
+            <option value={LockType.OneMonth}>1 Month ({rewardRates[LockType.OneMonth] || 8}% APR)</option>
+            <option value={LockType.OneYear}>1 Year ({rewardRates[LockType.OneYear] || 15}% APR)</option>
           </select>
         </div>
-        
+
         <button
           type="submit"
           disabled={!isApproved || loading || !amount || parseFloat(amount) <= 0}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition disabled:opacity-70"
         >
-          {loading ? '处理中...' : '质押代币'}
+          {loading ? 'Processing...' : 'Stake Tokens'}
         </button>
-        
+
         {!isApproved && (
           <p className="mt-2 text-sm text-red-600 text-center">
-            请先授权代币
+            Please approve tokens first
           </p>
         )}
       </form>
