@@ -8,14 +8,14 @@ function WalletConnect({ address, isAdmin, onLogout }) {
           {address.slice(0, 6)}...{address.slice(-4)}
         </p>
         <p className="text-xs text-gray-500">
-          {isAdmin ? '管理员' : '用户'}
+          {isAdmin ? 'Administrator' : 'User'}
         </p>
       </div>
       <button
         onClick={onLogout}
         className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm transition"
       >
-        断开
+        Disconnect
       </button>
     </div>
   );
