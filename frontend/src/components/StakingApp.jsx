@@ -7,14 +7,14 @@ import StakeForm from './StakeForm.jsx';
 import AdminPanel from './AdminPanel.jsx';
 import WithdrawButton from './WithdrawButton.jsx';
 
-// 质押类型枚举
+// Staking type enumeration
 const LockType = {
   Flex: 0,
   OneMonth: 1,
   OneYear: 2
 };
 
-// ABI 定义
+// ABI definitions
 const stakingAbi = [
   "function token() view returns (address)",
   "function owner() view returns (address)",
@@ -45,45 +45,45 @@ function StakingApp({ user, onLogout }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // 获取正确的合约地址
+  // Get the correct contract address
   const stakingAddress = useMemo(() => {
-    // 尝试多种可能的键名
+    // Try multiple possible key names
     const address = addresses.staking || addresses.stakingContract;
     if (!address) {
-      console.error("无法找到质押合约地址，请检查addresses.json文件");
-      setError("配置错误：未找到质押合约地址");
+      console.error("Unable to find staking contract address, please check addresses.json file");
+      setError("Configuration error: Staking contract address not found");
     }
     return address;
   }, []);
 
-  // 创建合约实例
+  // Create contract instance
   const stakingContract = useMemo(() => {
     if (!user?.signer || !stakingAddress) return null;
     try {
-      console.log("创建质押合约实例，地址:", stakingAddress);
+      console.log("Creating staking contract instance, address:", stakingAddress);
       return new ethers.Contract(stakingAddress, stakingAbi, user.signer);
     } catch (err) {
-      console.error("创建质押合约实例失败:", err);
-      setError("初始化合约失败: " + err.message);
+      console.error("Failed to create staking contract instance:", err);
+      setError("Failed to initialize contract: " + err.message);
       return null;
     }
   }, [user, stakingAddress]);
 
-  // 获取并设置代币合约
+  // Get and set token contract
   const getTokenContract = async () => {
     if (!stakingContract || !user?.signer) return null;
     try {
       const tokenAddress = await stakingContract.token();
-      console.log("获取到代币合约地址:", tokenAddress);
+      console.log("Token contract address obtained:", tokenAddress);
       return new ethers.Contract(tokenAddress, tokenAbi, user.signer);
     } catch (err) {
-      console.error("获取代币合约失败:", err);
-      setError("获取代币信息失败: " + err.message);
+      console.error("Failed to get token contract:", err);
+      setError("Failed to get token information: " + err.message);
       return null;
     }
   };
 
-  // 加载用户数据
+  // Load user data
   useEffect(() => {
     if (!stakingContract || !user?.address) return;
 
@@ -91,15 +91,15 @@ function StakingApp({ user, onLogout }) {
       try {
         setLoading(true);
         setError("");
-        console.log("开始加载用户数据...");
+        console.log("Starting to load user data...");
 
-        // 获取代币合约
+        // Get token contract
         const tokenContract = await getTokenContract();
         if (!tokenContract) {
-          throw new Error("无法获取代币合约");
+          throw new Error("Unable to get token contract");
         }
 
-        // 获取代币信息
+        // Get token information
         const [name, symbol, decimals] = await Promise.all([
           tokenContract.name(),
           tokenContract.symbol(),
@@ -107,26 +107,26 @@ function StakingApp({ user, onLogout }) {
         ]);
 
         setTokenInfo({ name, symbol, decimals });
-        console.log("代币信息:", { name, symbol, decimals });
+        console.log("Token information:", { name, symbol, decimals });
 
-        // 获取余额和授权额度
+        // Get balance and allowance
         const [balance, allowance] = await Promise.all([
           tokenContract.balanceOf(user.address),
           tokenContract.allowance(user.address, stakingAddress)
         ]);
 
-        // 使用 formatUnits 代替 ethers.utils.formatUnits (v6兼容)
+        // Use formatUnits instead of ethers.utils.formatUnits (v6 compatible)
         setTokenBalance(ethers.formatUnits(balance, decimals));
         setTokenAllowance(ethers.formatUnits(allowance, decimals));
-        console.log("余额和授权:", {
+        console.log("Balance and allowance:", {
           balance: ethers.formatUnits(balance, decimals),
           allowance: ethers.formatUnits(allowance, decimals)
         });
 
-        // 获取质押记录
+        // Load staking records
         await loadStakes();
 
-        // 获取利率信息
+        // Get reward rate information
         const [flexRate, oneMonthRate, oneYearRate] = await Promise.all([
           stakingContract.rewardRates(LockType.Flex),
           stakingContract.rewardRates(LockType.OneMonth),
@@ -138,14 +138,14 @@ function StakingApp({ user, onLogout }) {
           [LockType.OneMonth]: oneMonthRate,
           [LockType.OneYear]: oneYearRate
         });
-        console.log("奖励利率:", {
+        console.log("Reward rates:", {
           Flex: flexRate,
           OneMonth: oneMonthRate,
           OneYear: oneYearRate
         });
       } catch (err) {
-        console.error("加载数据失败:", err);
-        setError("加载数据失败: " + err.message);
+        console.error("Failed to load data:", err);
+        setError("Failed to load data: " + err.message);
       } finally {
         setLoading(false);
       }
@@ -154,31 +154,31 @@ function StakingApp({ user, onLogout }) {
     loadUserData();
   }, [stakingContract, user, stakingAddress]);
 
-  // 加载质押记录
+  // Load staking records
   const loadStakes = async () => {
     if (!stakingContract || !user?.address) return;
 
     try {
-      console.log("开始加载质押记录...");
+      console.log("Starting to load staking records...");
       const count = await stakingContract.getStakeCount(user.address);
-      console.log(`找到 ${count} 条质押记录`);
-      
+      console.log(`Found ${count} staking records`);
+
       if (count.toString() === "0") {
         setStakes([]);
         return;
       }
-      
+
       const promises = [];
       for (let i = 0; i < count; i++) {
         promises.push(stakingContract.getStake(user.address, i));
       }
 
       const stakesData = await Promise.all(promises);
-      
+
       const tokenContract = await getTokenContract();
       const decimals = await tokenContract.decimals();
 
-      // 格式化质押数据
+      // Format staking data
       const formattedStakes = stakesData.map((stake, index) => {
         const [amount, startTime, lockType, claimed, reward, unlockTime] = stake;
         return {
@@ -193,14 +193,14 @@ function StakingApp({ user, onLogout }) {
       });
 
       setStakes(formattedStakes);
-      console.log("质押记录加载完成:", formattedStakes);
+      console.log("Staking records loaded:", formattedStakes);
     } catch (err) {
-      console.error("加载质押记录失败:", err);
-      setError("加载质押记录失败: " + err.message);
+      console.error("Failed to load staking records:", err);
+      setError("Failed to load staking records: " + err.message);
     }
   };
 
-  // 授权代币
+  // Approve tokens
   const approveToken = async () => {
     setLoading(true);
     setError("");
@@ -211,70 +211,70 @@ function StakingApp({ user, onLogout }) {
       if (!tokenContract) return;
 
       const decimals = await tokenContract.decimals();
-      // 使用 parseUnits 代替 ethers.utils.parseUnits (v6兼容)
-      const amount = ethers.parseUnits("1000000", decimals); // 授权一个大数额
+      // Use parseUnits instead of ethers.utils.parseUnits (v6 compatible)
+      const amount = ethers.parseUnits("1000000", decimals); // Approve a large amount
 
-      console.log("授权代币中...");
+      console.log("Approving tokens...");
       const tx = await tokenContract.approve(stakingAddress, amount);
-      console.log("等待交易确认...", tx.hash);
+      console.log("Waiting for transaction confirmation...", tx.hash);
       await tx.wait();
 
-      // 更新授权额度
+      // Update allowance
       const allowance = await tokenContract.allowance(user.address, stakingAddress);
       setTokenAllowance(ethers.formatUnits(allowance, decimals));
-      setSuccess("代币授权成功");
-      console.log("授权成功");
+      setSuccess("Token approval successful");
+      console.log("Approval successful");
     } catch (err) {
-      console.error("授权失败:", err);
-      setError("授权失败: " + err.message);
+      console.error("Approval failed:", err);
+      setError("Approval failed: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // 质押代币
+  // Stake tokens
   const handleStake = async (amount, lockType) => {
     if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
-      setError("请输入有效的质押金额");
+      setError("Please enter a valid staking amount");
       return;
     }
     if (typeof lockType !== "number" || lockType < 0 || lockType > 2) {
-      setError("请选择正确的锁仓类型");
+      setError("Please select a valid lock type");
       return;
     }
-    
+
     if (!stakingContract || !tokenInfo) return;
     setLoading(true);
     setError("");
     setSuccess("");
 
     try {
-      // 使用 parseUnits 代替 ethers.utils.parseUnits (v6兼容)
+      // Use parseUnits instead of ethers.utils.parseUnits (v6 compatible)
       const amountInWei = ethers.parseUnits(amount, tokenInfo.decimals);
-      console.log("开始质押:", { amount, lockType });
+      console.log("Starting staking:", { amount, lockType });
       const tx = await stakingContract.stake(amountInWei, lockType);
-      console.log("等待交易确认...", tx.hash);
+      console.log("Waiting for transaction confirmation...", tx.hash);
       await tx.wait();
 
-      // 刷新数据
+      // Refresh data
       await loadStakes();
-      
-      // 更新余额
+
+      // Update balance
       const tokenContract = await getTokenContract();
       const balance = await tokenContract.balanceOf(user.address);
       setTokenBalance(ethers.formatUnits(balance, tokenInfo.decimals));
 
-      setSuccess("质押成功");
-      console.log("质押成功");
+      setSuccess("Staking successful");
+      console.log("Staking successful");
     } catch (err) {
-      console.error("质押失败:", err);
-      setError("质押失败: " + err.message);
+      console.error("Staking failed:", err);
+      setError("Staking failed: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // 提取质押
+  // Withdraw staking
   const handleWithdraw = async (index) => {
     if (!stakingContract) return;
     setLoading(true);
@@ -282,32 +282,32 @@ function StakingApp({ user, onLogout }) {
     setSuccess("");
 
     try {
-      console.log("提取质押中...", { index });
+      console.log("Withdrawing staking...", { index });
       const tx = await stakingContract.withdraw(index);
-      console.log("等待交易确认...", tx.hash);
+      console.log("Waiting for transaction confirmation...", tx.hash);
       await tx.wait();
 
-      // 刷新数据
+      // Refresh data
       await loadStakes();
-      
-      // 更新余额
+
+      // Update balance
       if (tokenInfo) {
         const tokenContract = await getTokenContract();
         const balance = await tokenContract.balanceOf(user.address);
         setTokenBalance(ethers.formatUnits(balance, tokenInfo.decimals));
       }
 
-      setSuccess("提取成功");
-      console.log("提取成功");
+      setSuccess("Withdrawal successful");
+      console.log("Withdrawal successful");
     } catch (err) {
-      console.error("提取失败:", err);
-      setError("提取失败: " + err.message);
+      console.error("Withdrawal failed:", err);
+      setError("Withdrawal failed: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // 存入奖励池
+  // Deposit rewards
   const handleDepositReward = async (amount) => {
     if (!stakingContract || !tokenInfo || !user.isAdmin) return;
     setLoading(true);
@@ -315,50 +315,50 @@ function StakingApp({ user, onLogout }) {
     setSuccess("");
 
     try {
-      // 使用 parseUnits 代替 ethers.utils.parseUnits (v6兼容)
+      // Use parseUnits instead of ethers.utils.parseUnits (v6 compatible)
       const amountInWei = ethers.parseUnits(amount, tokenInfo.decimals);
-      console.log("充值奖励池中...", { amount });
+      console.log("Depositing rewards...", { amount });
       const tx = await stakingContract.depositReward(amountInWei);
-      console.log("等待交易确认...", tx.hash);
+      console.log("Waiting for transaction confirmation...", tx.hash);
       await tx.wait();
 
-      // 更新余额
+      // Update balance
       const tokenContract = await getTokenContract();
       const balance = await tokenContract.balanceOf(user.address);
       setTokenBalance(ethers.formatUnits(balance, tokenInfo.decimals));
 
-      setSuccess("奖励池充值成功");
-      console.log("奖励池充值成功");
+      setSuccess("Reward deposit successful");
+      console.log("Reward deposit successful");
     } catch (err) {
-      console.error("充值失败:", err);
-      setError("充值失败: " + err.message);
+      console.error("Deposit failed:", err);
+      setError("Deposit failed: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // 获取锁定类型名称
+  // Get lock type name
   const getLockTypeName = (type) => {
     switch (Number(type)) {
-      case LockType.Flex: return "活期";
-      case LockType.OneMonth: return "1个月";
-      case LockType.OneYear: return "1年";
-      default: return "未知";
+      case LockType.Flex: return "Flexible";
+      case LockType.OneMonth: return "1 Month";
+      case LockType.OneYear: return "1 Year";
+      default: return "Unknown";
     }
   };
 
-  // 如果没有找到合约地址，显示错误信息
+  // If no contract address is found, display error message
   if (!stakingAddress) {
     return (
       <div className="min-h-screen flex flex-col justify-center items-center px-4 py-8 bg-gray-50">
         <div className="bg-red-100 p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-bold mb-4 text-red-800">配置错误</h2>
-          <p className="text-red-700 mb-4">未找到质押合约地址，请检查addresses.json文件配置。</p>
+          <h2 className="text-xl font-bold mb-4 text-red-800">Configuration Error</h2>
+          <p className="text-red-700 mb-4">Staking contract address not found, please check the addresses.json file configuration.</p>
           <button
             onClick={onLogout}
             className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
           >
-            返回登录
+            Return to Login
           </button>
         </div>
       </div>
@@ -367,35 +367,35 @@ function StakingApp({ user, onLogout }) {
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center px-4 py-8 bg-gray-50">
-      {/* 顶部状态栏 */}
+      {/* Top status bar */}
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold text-blue-800">质押 DApp</h1>
-        <WalletConnect 
-          address={user.address} 
-          isAdmin={user.isAdmin} 
+        <h1 className="text-2xl font-bold text-blue-800">Staking DApp</h1>
+        <WalletConnect
+          address={user.address}
+          isAdmin={user.isAdmin}
           onLogout={onLogout}
         />
       </div>
 
-      {/* 提示信息 */}
+      {/* Notification messages */}
       {(error || success) && (
         <div className={`mb-6 p-4 rounded ${error ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
           {error || success}
         </div>
       )}
 
-      {/* 加载中状态 */}
+      {/* Loading state */}
       {loading && (
         <div className="mb-6 p-4 bg-blue-50 text-blue-700 rounded">
-          加载中，请稍候...
+          Loading, please wait...
         </div>
       )}
 
-      {/* 主要内容区 */}
+      {/* Main content area */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* 用户信息面板 */}
+        {/* User information panel */}
         <div className="lg:col-span-1">
-          <UserPanel 
+          <UserPanel
             address={user.address}
             isAdmin={user.isAdmin}
             tokenInfo={tokenInfo}
@@ -407,9 +407,9 @@ function StakingApp({ user, onLogout }) {
           />
         </div>
 
-        {/* 质押操作面板 */}
+        {/* Staking operation panel */}
         <div className="lg:col-span-1">
-          <StakeForm 
+          <StakeForm
             loading={loading}
             tokenAllowance={tokenAllowance}
             tokenInfo={tokenInfo}
@@ -418,10 +418,10 @@ function StakingApp({ user, onLogout }) {
           />
         </div>
 
-        {/* 管理员面板 (仅管理员可见) */}
+        {/* Admin panel (visible only to admins) */}
         {user.isAdmin && (
           <div className="lg:col-span-1">
-            <AdminPanel 
+            <AdminPanel
               loading={loading}
               tokenInfo={tokenInfo}
               tokenAllowance={tokenAllowance}
@@ -430,15 +430,15 @@ function StakingApp({ user, onLogout }) {
           </div>
         )}
 
-        {/* 质押记录面板 */}
+        {/* Staking records panel */}
         <div className={user.isAdmin ? "lg:col-span-1" : "lg:col-span-2"}>
           <div className="bg-white p-6 rounded-lg shadow-md h-full">
-            <h2 className="text-xl font-bold mb-4 text-blue-800">质押记录</h2>
-            
+            <h2 className="text-xl font-bold mb-4 text-blue-800">Staking Records</h2>
+
             {loading ? (
-              <p className="text-center text-gray-500 py-8">加载中...</p>
+              <p className="text-center text-gray-500 py-8">Loading...</p>
             ) : stakes.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">暂无质押记录</p>
+              <p className="text-center text-gray-500 py-8">No staking records</p>
             ) : (
               <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
                 {stakes.map(stake => (
@@ -446,21 +446,21 @@ function StakingApp({ user, onLogout }) {
                     <div className="flex justify-between items-center mb-2">
                       <span className="font-semibold">{getLockTypeName(stake.lockType)}</span>
                       <span className={`px-2 py-1 rounded text-xs ${stake.claimed ? "bg-gray-200" : "bg-green-100 text-green-800"}`}>
-                        {stake.claimed ? "已提取" : "活跃中"}
+                        {stake.claimed ? "Withdrawn" : "Active"}
                       </span>
                     </div>
-                    
+
                     <div className="text-sm space-y-1 mb-3">
-                      <p><span className="text-gray-600">金额:</span> {parseFloat(stake.amount).toFixed(4)} {tokenInfo?.symbol}</p>
-                      <p><span className="text-gray-600">开始时间:</span> {stake.startTime.toLocaleDateString()}</p>
+                      <p><span className="text-gray-600">Amount:</span> {parseFloat(stake.amount).toFixed(4)} {tokenInfo?.symbol}</p>
+                      <p><span className="text-gray-600">Start Time:</span> {stake.startTime.toLocaleDateString()}</p>
                       {stake.lockType !== LockType.Flex && (
-                        <p><span className="text-gray-600">到期时间:</span> {stake.unlockTime.toLocaleDateString()}</p>
+                        <p><span className="text-gray-600">Unlock Time:</span> {stake.unlockTime.toLocaleDateString()}</p>
                       )}
-                      <p><span className="text-gray-600">当前收益:</span> {parseFloat(stake.reward).toFixed(6)} {tokenInfo?.symbol}</p>
+                      <p><span className="text-gray-600">Current Reward:</span> {parseFloat(stake.reward).toFixed(6)} {tokenInfo?.symbol}</p>
                     </div>
-                    
+
                     {!stake.claimed && (
-                      <WithdrawButton 
+                      <WithdrawButton
                         stake={stake}
                         loading={loading}
                         onWithdraw={() => handleWithdraw(stake.index)}
