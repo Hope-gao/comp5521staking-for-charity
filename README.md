@@ -146,15 +146,19 @@ function UserPanel({
 
 ## Running Steps
 ### Smart Contract Section
-1. Compile the Contracts
+1. At root
+```shell
+npm install @openzeppelin/contracts
+```
+2. Compile the Contracts
 ```shell
 npx hardhat compile
 ```
-2. Start the Local Node
+3. Start the Local Node
 ```shell
 npx hardhat node
 ```
-3. Deploy the Contracts to the Local Network
+4. Deploy the Contracts to the Local Network
 ```shell
 npx hardhat run scripts/deploy.js --network localhost
 ```
@@ -163,6 +167,7 @@ npx hardhat run scripts/deploy.js --network localhost
 1. Enter the Front - End Project Directory
 ```shell
 cd frontend
+npm install
 ```
 2. Start the Development Server
 ```shell
